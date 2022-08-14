@@ -31,7 +31,7 @@ class PaginatedPosts {
 	hasMore: boolean;
 }
 
-@Resolver()
+@Resolver(Post)
 export class PostResolver {
 	@Query(() => PaginatedPosts)
 	async posts(
