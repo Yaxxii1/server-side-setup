@@ -1,4 +1,5 @@
 import argon2 from "argon2";
+import { FORGET_PASSWORD_PREFIX, TIME_UNTIL_EXPIRATION } from "../constants";
 import {
 	Arg,
 	Ctx,
@@ -11,11 +12,15 @@ import {
 	Query,
 	Resolver,
 	Root,
+	UseMiddleware,
 } from "type-graphql";
-import { getConnection } from "typeorm";
+import { DeleteResult, getConnection } from "typeorm";
 import { User } from "../Models/User";
 import { Context } from "../types";
+import { isAuth } from "../util/isAuth";
 import { validateRegister } from "../util/validateRegister";
+import { sendEmail } from "../util/sendEmail";
+import { v4 } from "uuid";
 
 @InputType()
 export class UserNamePasswordInput {
@@ -167,6 +172,7 @@ export class UserResolver {
 	}
 
 	@Mutation(() => UserResponse)
+	@UseMiddleware(isAuth)
 	async updateUser(
 		@Arg("id", () => Int) id: number,
 		@Arg("username") username: string,
@@ -195,5 +201,98 @@ export class UserResolver {
 		}
 		await user.save();
 		return { user };
+	}
+
+	@Mutation(() => Boolean)
+	@UseMiddleware(isAuth)
+	deleteUser(
+		@Arg("id", () => Int) id: number,
+		@Ctx() { req }: Context
+	): Promise<DeleteResult> {
+		if (id !== req.session.userId) {
+			throw new Error("You can only delete your own account!");
+		}
+		const user = User.delete(id);
+		return user;
+	}
+
+	@Mutation(() => Boolean)
+	logout(@Ctx() { req, res }: Context) {
+		return new Promise((resolve) => {
+			req.session.destroy((err) => {
+				res.clearCookie("qid");
+				resolve(!err);
+			});
+		});
+	}
+
+	@Mutation(() => UserResponse)
+	async changePassword(
+		@Arg("token", () => String) token: string,
+		@Arg("newPassword", () => String) newPassword: string,
+		@Ctx() { redis, req }: Context
+	): Promise<UserResponse> {
+		const key = FORGET_PASSWORD_PREFIX + token;
+		const userId = await redis.get(key);
+		if (!userId) {
+			return {
+				errors: [
+					{
+						field: "token",
+						message: "This token is invalid or expired",
+					},
+				],
+			};
+		}
+
+		const userIdNum = parseInt(userId);
+		const user = await User.findOne({ where: { id: userIdNum } });
+		if (!user) {
+			return {
+				errors: [
+					{
+						field: "token",
+						message: "User no longer exists",
+					},
+				],
+			};
+		}
+
+		await User.update(
+			{ id: userIdNum },
+			{
+				password: await argon2.hash(newPassword),
+			}
+		);
+
+		req.session.userId = user.id;
+
+		await redis.del(key);
+
+		return {
+			user,
+		};
+	}
+
+	@Mutation(() => Boolean)
+	async forgotPassword(@Arg("email") email: string, @Ctx() { redis }: Context) {
+		const user = await User.findOne({ where: { email } });
+
+		if (!user) {
+			return null;
+		}
+
+		const token = v4();
+
+		await redis.set(
+			FORGET_PASSWORD_PREFIX + token,
+			user.id,
+			"EX",
+			TIME_UNTIL_EXPIRATION
+		);
+
+		sendEmail(email, `<p> your token is: ${token}</p>`);
+
+		return true;
 	}
 }
