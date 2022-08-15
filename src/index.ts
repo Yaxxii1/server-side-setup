@@ -17,6 +17,7 @@ import { UserResolver } from "./resolvers/user";
 import connectRedis from "connect-redis";
 import session from "express-session";
 import ioredis from "ioredis";
+import { createUserLoader } from "./util/createUserLoader";
 
 const main = async () => {
 	const connection = await createConnection({
@@ -73,7 +74,12 @@ const main = async () => {
 			resolvers: [HelloResolver, PostResolver, UserResolver],
 			validate: false,
 		}),
-		context: ({ req, res }: Context) => ({ res, req, redis }),
+		context: ({ req, res }: Context) => ({
+			res,
+			req,
+			redis,
+			userLoader: createUserLoader(),
+		}),
 	});
 
 	await apolloServer.start();
