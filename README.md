@@ -10,30 +10,41 @@ These instructions will get you a copy of the project up and running on your loc
 
 The things you need before installing the software.
 
-- You need this
-- And you need this
-- Oh, and don't forget this
+- [Node.js](https://nodejs.org/en/)
+- [npm](https://www.npmjs.com/)
+- [Yarn](https://yarnpkg.com/)
+- [Postgres](https://www.postgresql.org/)
+- [Redis](https://redis.io/)
 
 ### Installation
 
 A step by step guide that will tell you how to get the development environment up and running.
 
-```
-$ First step
-$ Another step
-$ Final step
+```bash
+$ yarn
 ```
 
 ## Usage
 
 A few examples of useful commands and/or tasks.
 
-```
-$ First example
-$ Second example
-$ And keep this in mind
+```markdown
+# Start the development server
+
+$ yarn dev
+
+# Run Watch command to watch for changes in the code and restart the server
+
+$ yarn watch
+
+# Open the GraphQL playground in the browser
+
+$ Open up on localhost:4000
+
+# Play with the GraphQL playground
 ```
 
+<!--
 ## Deployment
 
 Additional notes on how to deploy this on a live or release system. Explaining the most important branches, what pipelines they trigger and how to update the database (if anything special).
@@ -57,3 +68,4 @@ Additional notes on how to deploy this on a live or release system. Explaining t
 - Confluence link:
 - Asana board:
 - etc...
+-->
