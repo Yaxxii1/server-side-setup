@@ -79,4 +79,27 @@ export class FollowResolver {
 		}
 		return undefined;
 	}
+
+	@Mutation(() => Boolean)
+	@UseMiddleware(isAuth)
+	async unFollow(
+		@Arg("id", () => Int) id: number,
+		@Ctx() { req }: Context
+	): Promise<boolean> {
+		const currentUser = await User.findOne(req.session.userId);
+		try {
+			const result = await Follow.createQueryBuilder()
+				.delete()
+				.from(Follow)
+				.where("follower = :id", { id: currentUser?.id })
+				.andWhere("followsTo = :id2", { id2: id })
+				.execute();
+			if (!result.affected) {
+				return false;
+			}
+			return true;
+		} catch (error) {
+			return false;
+		}
+	}
 }
