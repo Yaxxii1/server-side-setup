@@ -29,6 +29,10 @@ $ yarn
 A few examples of useful commands and/or tasks.
 
 ```markdown
+# Make sure Redis is running
+
+$ sudo service redis-server start
+
 # Start the development server
 
 $ yarn dev
