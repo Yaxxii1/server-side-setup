@@ -40,13 +40,30 @@ class PaginatedPosts {
 @Resolver(Post)
 export class PostResolver {
 	@FieldResolver(() => String)
-	textSnippet(@Root() post: Post) {
+	textSnippet(@Root() post: Post): string {
 		return post.text.slice(0, 50);
 	}
 
 	@FieldResolver(() => User)
-	creator(@Root() post: Post, @Ctx() { userLoader }: Context) {
+	creator(@Root() post: Post, @Ctx() { userLoader }: Context): Promise<User> {
 		return userLoader.load(post.creatorId);
+	}
+
+	@FieldResolver(() => Int, { nullable: true })
+	async voteStatus(
+		@Root() post: Post,
+		@Ctx() { likeLoader, req }: Context
+	): Promise<number | null> {
+		if (!req.session.userId) {
+			return null;
+		}
+
+		const like = await likeLoader.load({
+			postId: post.id,
+			userId: req.session.userId,
+		});
+
+		return like ? like.value : 0;
 	}
 
 	@Query(() => PaginatedPosts)

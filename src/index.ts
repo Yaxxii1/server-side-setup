@@ -19,6 +19,7 @@ import { HelloResolver } from "./resolvers/hello";
 import { PostResolver } from "./resolvers/post";
 import { UserResolver } from "./resolvers/user";
 import { Context } from "./types";
+import { createLikeLoader } from "./util/createLikeLoader";
 import { createUserLoader } from "./util/createUserLoader";
 
 const main = async () => {
@@ -87,6 +88,7 @@ const main = async () => {
 			req,
 			redis,
 			userLoader: createUserLoader(),
+			likeLoader: createLikeLoader(),
 		}),
 	});
 
