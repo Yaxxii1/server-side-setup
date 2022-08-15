@@ -1,17 +1,23 @@
-import { Post } from "../Models/Post";
+import { isAuth } from "../util/isAuth";
 import {
 	Arg,
 	Ctx,
 	Field,
+	FieldResolver,
 	InputType,
 	Int,
 	Mutation,
 	ObjectType,
 	Query,
 	Resolver,
+	Root,
+	UseMiddleware,
 } from "type-graphql";
-import { Context } from "../types";
 import { getConnection } from "typeorm";
+import { Post } from "../Models/Post";
+import { User } from "../Models/User";
+import { Context } from "../types";
+import { Like } from "../Models/Like";
 
 @InputType()
 class PostInput {
@@ -33,6 +39,16 @@ class PaginatedPosts {
 
 @Resolver(Post)
 export class PostResolver {
+	@FieldResolver(() => String)
+	textSnippet(@Root() post: Post) {
+		return post.text.slice(0, 50);
+	}
+
+	@FieldResolver(() => User)
+	creator(@Root() post: Post, @Ctx() { userLoader }: Context) {
+		return userLoader.load(post.creatorId);
+	}
+
 	@Query(() => PaginatedPosts)
 	async posts(
 		@Arg("limit", () => Int) limit: number,
@@ -88,23 +104,98 @@ export class PostResolver {
 	}
 
 	@Mutation(() => Post)
+	@UseMiddleware(isAuth)
 	async createPost(
 		@Arg("input") input: PostInput,
 		@Ctx() { req }: Context
 	): Promise<Post> {
 		const post = Post.create({
 			...input,
+			creatorId: req.session.userId,
 		}).save();
 
 		return post;
 	}
 
 	@Mutation(() => Boolean)
+	@UseMiddleware(isAuth)
 	async deletePost(
 		@Arg("id", () => Int) id: number,
 		@Ctx() { req }: Context
 	): Promise<Boolean> {
-		await Post.delete({ id });
+		await Post.delete({ id, creatorId: req.session.userId });
+		return true;
+	}
+
+	@Mutation(() => Post, { nullable: true })
+	@UseMiddleware(isAuth)
+	async updatePost(
+		@Arg("id", () => Int) id: number,
+		@Arg("title", () => String) title: string,
+		@Arg("text", () => String) text: string,
+		@Ctx() { req }: Context
+	): Promise<Post | null> {
+		const result = await getConnection()
+			.createQueryBuilder()
+			.update(Post)
+			.set({ title, text })
+			.where('id = :id and "creatorId" = :creatorId', {
+				id,
+				creatorId: req.session.userId,
+			})
+			.returning("*")
+			.execute();
+
+		console.log("result:", result);
+		return result.raw[0];
+	}
+
+	@Mutation(() => Boolean)
+	@UseMiddleware(isAuth)
+	async like(
+		@Arg("postId", () => Int) postId: number,
+		@Arg("value", () => Int) value: number,
+		@Ctx() { req }: Context
+	): Promise<Boolean> {
+		const isLike = value !== -1;
+		const realValue = isLike ? 1 : -1;
+		const { userId } = req.session;
+		const like = await Like.findOne({
+			where: {
+				postId,
+				userId,
+			},
+		});
+
+		// if the user has liked this post already, but he changed his mind and wants to unlike it
+		if (like && like.value !== realValue) {
+			await getConnection().transaction(async (transactionManagerObject) => {
+				await transactionManagerObject.query(`
+					update "like"
+					set value = ${realValue}
+					where "postId" = ${postId} and "userId" = ${userId}
+				`);
+				await transactionManagerObject.query(`
+					update post 
+					set "points" = "points" + ${2 * realValue}
+					where id = ${postId}
+				`);
+			});
+			// if the user did not like this post already
+		} else if (!like) {
+			await getConnection().transaction(async (transactionManagerObject) => {
+				await transactionManagerObject.query(`
+					insert into "like" ("userId", "postId", value)
+					values (${userId}, ${postId}, ${realValue})
+				`);
+				await transactionManagerObject.query(`
+					update post 
+					set "points" = "points" + ${realValue}
+					where id = ${postId}
+				`);
+			});
+		}
+
 		return true;
 	}
 }

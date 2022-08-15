@@ -1,4 +1,4 @@
-import { Field, ObjectType } from "type-graphql";
+import { Field, Int, ObjectType } from "type-graphql";
 import {
 	Entity,
 	PrimaryGeneratedColumn,
@@ -6,7 +6,11 @@ import {
 	CreateDateColumn,
 	UpdateDateColumn,
 	BaseEntity,
+	ManyToOne,
+	OneToMany,
 } from "typeorm";
+import { Like } from "./Like";
+import { User } from "./User";
 
 @ObjectType()
 @Entity()
@@ -22,6 +26,24 @@ export class Post extends BaseEntity {
 	@Field()
 	@Column()
 	text!: string;
+
+	@Field()
+	@Column({ type: "int", default: 0 })
+	points!: number;
+
+	@Field(() => Int, { nullable: true })
+	voteStatus: number | null; // 1 or -1 or null
+
+	@Field()
+	@Column()
+	creatorId: number;
+
+	@Field()
+	@ManyToOne(() => User, (user) => user.posts)
+	creator: User;
+
+	@OneToMany(() => Like, (like) => like.post)
+	likes: Like[];
 
 	@Field(() => String)
 	@CreateDateColumn()

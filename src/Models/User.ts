@@ -6,7 +6,10 @@ import {
 	CreateDateColumn,
 	UpdateDateColumn,
 	BaseEntity,
+	OneToMany,
 } from "typeorm";
+import { Like } from "./Like";
+import { Post } from "./Post";
 
 @ObjectType()
 @Entity()
@@ -26,12 +29,19 @@ export class User extends BaseEntity {
 	@Column()
 	password!: string;
 
-	// @Column()
-	// isActive: boolean;
+	@OneToMany(() => Post, (post) => post.creator)
+	posts: Post[];
+
+	@OneToMany(() => Like, (like) => like.user)
+	likes: Like[];
 
 	@Field(() => String)
 	@CreateDateColumn()
 	createdAt: Date;
+
+	@Field(() => Boolean)
+	@Column({ default: false })
+	isActive: boolean;
 
 	@Field(() => String)
 	@UpdateDateColumn()

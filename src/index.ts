@@ -1,22 +1,24 @@
-import { ApolloServer } from "apollo-server-express";
-import express from "express";
-import "reflect-metadata";
 import {
 	ApolloServerPluginLandingPageDisabled,
 	ApolloServerPluginLandingPageGraphQLPlayground,
 } from "apollo-server-core";
-import { buildSchema } from "type-graphql";
-import { createConnection } from "typeorm";
-import { Post } from "./Models/Post";
-import { HelloResolver } from "./resolvers/hello";
-import { PostResolver } from "./resolvers/post";
-import { Context } from "./types";
-import { __prod__ } from "./constants";
-import { User } from "./Models/User";
-import { UserResolver } from "./resolvers/user";
+import { ApolloServer } from "apollo-server-express";
 import connectRedis from "connect-redis";
+import express from "express";
 import session from "express-session";
 import ioredis from "ioredis";
+import path from "path";
+import "reflect-metadata";
+import { buildSchema } from "type-graphql";
+import { createConnection } from "typeorm";
+import { DELETE_ALL, __prod__ } from "./constants";
+import { Like } from "./Models/Like";
+import { Post } from "./Models/Post";
+import { User } from "./Models/User";
+import { HelloResolver } from "./resolvers/hello";
+import { PostResolver } from "./resolvers/post";
+import { UserResolver } from "./resolvers/user";
+import { Context } from "./types";
 import { createUserLoader } from "./util/createUserLoader";
 
 const main = async () => {
@@ -27,17 +29,22 @@ const main = async () => {
 		username: "postgres",
 		logging: true,
 		synchronize: true,
-		migrations: [],
-		entities: [Post, User],
+		migrations: [path.join(__dirname, "./migrations/**")],
+		entities: [Post, User, Like],
 	});
-	// await connection.runMigrations();
+	await connection.runMigrations();
 
+	if (DELETE_ALL) {
+		await Like.delete({});
+		await Post.delete({});
+		await User.delete({});
+	}
 	const RedisStore = connectRedis(session);
 
 	const redis = ioredis.createClient();
 
 	redis.on("connect", () => console.log("Redis client connected"));
-	redis.on("error", (error: Error) => console.log("Redis Client Error"));
+	redis.on("error", (error: Error) => console.log("Redis Client Error", error));
 
 	const app = express();
 
@@ -49,10 +56,10 @@ const main = async () => {
 				disableTouch: true,
 			}),
 			cookie: {
-				maxAge: 1000 * 60 * 24 * 365 * 1, // 1 year
-				httpOnly: true,
-				sameSite: "lax",
-				secure: __prod__,
+				maxAge: 1000 * 60 * 60 * 24 * 365 * 1, // 1 year
+				httpOnly: true, // only allow cookie to be accessed via HTTP
+				sameSite: "lax", // prevent cookie from being sent with cross-site requests
+				secure: __prod__, // cookie only works in https
 			},
 			saveUninitialized: false,
 			secret: "erslfgkljrgkjeihgjjejgkherjgyiewfikjrdeigjher",
@@ -66,6 +73,7 @@ const main = async () => {
 		plugins: [
 			// This disables the new Apollo Sandbox, because it makes problems trying to set cookies
 			// disable prod to use Sandbox version
+			// nvm dont disbale prod to do so idk doesnt work properly my bad lmao
 			__prod__
 				? ApolloServerPluginLandingPageDisabled
 				: ApolloServerPluginLandingPageGraphQLPlayground,
