@@ -8,6 +8,7 @@ import {
 	BaseEntity,
 	OneToMany,
 } from "typeorm";
+import { Follow } from "./Follow";
 import { Like } from "./Like";
 import { Post } from "./Post";
 
@@ -35,13 +36,19 @@ export class User extends BaseEntity {
 	@OneToMany(() => Like, (like) => like.user)
 	likes: Like[];
 
-	@Field(() => String)
-	@CreateDateColumn()
-	createdAt: Date;
+	@OneToMany(() => Follow, (follow) => follow.follower)
+	follows!: Follow[];
+
+	@OneToMany(() => Follow, (follow) => follow.followsTo)
+	followers!: Follow[];
 
 	@Field(() => Boolean)
 	@Column({ default: false })
 	isActive: boolean;
+
+	@Field(() => String)
+	@CreateDateColumn()
+	createdAt: Date;
 
 	@Field(() => String)
 	@UpdateDateColumn()
