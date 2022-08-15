@@ -12,9 +12,11 @@ import "reflect-metadata";
 import { buildSchema } from "type-graphql";
 import { createConnection } from "typeorm";
 import { DELETE_ALL, __prod__ } from "./constants";
+import { Follow } from "./Models/Follow";
 import { Like } from "./Models/Like";
 import { Post } from "./Models/Post";
 import { User } from "./Models/User";
+import { FollowResolver } from "./resolvers/follow";
 import { HelloResolver } from "./resolvers/hello";
 import { PostResolver } from "./resolvers/post";
 import { UserResolver } from "./resolvers/user";
@@ -31,15 +33,17 @@ const main = async () => {
 		logging: true,
 		synchronize: true,
 		migrations: [path.join(__dirname, "./migrations/**")],
-		entities: [Post, User, Like],
+		entities: [Post, User, Like, Follow],
 	});
+
 	await connection.runMigrations();
 
-	if (DELETE_ALL) {
-		await Like.delete({});
-		await Post.delete({});
-		await User.delete({});
-	}
+	// if (DELETE_ALL) {
+	// 	await Like.delete({});
+	// 	await Post.delete({});
+	// 	await User.delete({});
+	// }
+
 	const RedisStore = connectRedis(session);
 
 	const redis = ioredis.createClient();
@@ -80,7 +84,7 @@ const main = async () => {
 				: ApolloServerPluginLandingPageGraphQLPlayground,
 		],
 		schema: await buildSchema({
-			resolvers: [HelloResolver, PostResolver, UserResolver],
+			resolvers: [HelloResolver, PostResolver, UserResolver, FollowResolver],
 			validate: false,
 		}),
 		context: ({ req, res }: Context) => ({

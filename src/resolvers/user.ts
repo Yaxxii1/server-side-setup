@@ -21,6 +21,7 @@ import { isAuth } from "../util/isAuth";
 import { validateRegister } from "../util/validateRegister";
 import { sendEmail } from "../util/sendEmail";
 import { v4 } from "uuid";
+import { Follow } from "../Models/Follow";
 
 @InputType()
 export class UserNamePasswordInput {
@@ -39,6 +40,18 @@ class FieldError {
 
 	@Field()
 	message: string;
+}
+
+@ObjectType()
+class UserWithExtra extends User {
+	@Field(() => Int)
+	followsCount!: number;
+
+	@Field(() => Int)
+	followersCount!: number;
+
+	@Field()
+	following!: boolean;
 }
 
 @ObjectType()
@@ -78,8 +91,39 @@ export class UserResolver {
 	}
 
 	@Query(() => User, { nullable: true })
-	async user(@Arg("id", () => Int) id: number): Promise<User | undefined> {
+	async userById(@Arg("id", () => Int) id: number): Promise<User | undefined> {
 		return User.findOne({ id });
+	}
+
+	@Query(() => UserWithExtra, { nullable: true })
+	async user(
+		@Arg("id", () => Int, { nullable: true }) id: number,
+		@Ctx() { req }: Context
+	): Promise<UserWithExtra | undefined> {
+		const currentUser = await User.findOne(req.session.userId);
+
+		let following = false;
+		if (currentUser) {
+			const follows = await Follow.createQueryBuilder("follow")
+				.leftJoinAndSelect("follow.followsTo", "user")
+				.where("follow.follower = :id", { id: currentUser.id })
+				.getMany();
+
+			following = follows.some((follow) => follow.followsTo.id === id);
+		}
+
+		const result = await User.createQueryBuilder("user")
+			.loadRelationCountAndMap("user.followsCount", "user.follows")
+			.loadRelationCountAndMap("user.followersCount", "user.followers")
+			.where("user.id = :id", { id })
+			.getOne();
+
+		const userToReturn = {
+			...result,
+			following,
+		} as UserWithExtra;
+
+		return userToReturn;
 	}
 
 	@Mutation(() => UserResponse)
