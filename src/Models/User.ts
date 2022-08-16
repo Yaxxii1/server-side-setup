@@ -1,15 +1,16 @@
 import { Field, ObjectType } from "type-graphql";
 import {
-	Entity,
-	PrimaryGeneratedColumn,
+	BaseEntity,
 	Column,
 	CreateDateColumn,
-	UpdateDateColumn,
-	BaseEntity,
+	Entity,
 	OneToMany,
+	PrimaryGeneratedColumn,
+	UpdateDateColumn,
 } from "typeorm";
 import { Follow } from "./Follow";
 import { Like } from "./Like";
+import { Message } from "./Message";
 import { Post } from "./Post";
 
 @ObjectType()
@@ -41,6 +42,10 @@ export class User extends BaseEntity {
 
 	@OneToMany(() => Follow, (follow) => follow.followsTo)
 	followers!: Follow[];
+
+	// a user can send messages to other users
+	@OneToMany(() => Message, (message) => message.user)
+	messages: Message[];
 
 	@Field(() => Boolean)
 	@Column({ default: false })
