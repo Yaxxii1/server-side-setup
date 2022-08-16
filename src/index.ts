@@ -11,13 +11,15 @@ import path from "path";
 import "reflect-metadata";
 import { buildSchema } from "type-graphql";
 import { createConnection } from "typeorm";
-import { DELETE_ALL, __prod__ } from "./constants";
+import { __prod__ } from "./constants";
 import { Follow } from "./Models/Follow";
 import { Like } from "./Models/Like";
+import { Message } from "./Models/Message";
 import { Post } from "./Models/Post";
 import { User } from "./Models/User";
 import { FollowResolver } from "./resolvers/follow";
 import { HelloResolver } from "./resolvers/hello";
+import { MessageResolver } from "./resolvers/message";
 import { PostResolver } from "./resolvers/post";
 import { UserResolver } from "./resolvers/user";
 import { Context } from "./types";
@@ -33,7 +35,7 @@ const main = async () => {
 		logging: true,
 		synchronize: true,
 		migrations: [path.join(__dirname, "./migrations/**")],
-		entities: [Post, User, Like, Follow],
+		entities: [Post, User, Like, Follow, Message],
 	});
 
 	await connection.runMigrations();
@@ -84,7 +86,13 @@ const main = async () => {
 				: ApolloServerPluginLandingPageGraphQLPlayground,
 		],
 		schema: await buildSchema({
-			resolvers: [HelloResolver, PostResolver, UserResolver, FollowResolver],
+			resolvers: [
+				HelloResolver,
+				PostResolver,
+				UserResolver,
+				FollowResolver,
+				MessageResolver,
+			],
 			validate: false,
 		}),
 		context: ({ req, res }: Context) => ({
