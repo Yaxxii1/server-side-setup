@@ -12,7 +12,7 @@ import {
 import { Context } from "../types";
 import { isAuth } from "../util/isAuth";
 
-@Resolver()
+@Resolver(Message)
 export class MessageResolver {
 	@Mutation(() => Message)
 	@UseMiddleware(isAuth)
@@ -38,22 +38,27 @@ export class MessageResolver {
 
 	@Query(() => [Message])
 	async getMessages(
-		@Arg("userId") userId: number,
+		@Arg("userId", () => Int) userId: number,
 		@Ctx() { req }: Context
 	): Promise<Message[]> {
+		const fromUser = await User.findOne(req.session.userId);
 		const user = await User.findOne(userId);
+
 		if (!user) {
 			throw new Error("User not found");
 		}
+
+		if (!req.session.userId) {
+			throw new Error("you did not get any messages, please login");
+		}
+
 		const messages = await Message.find({
 			where: {
-				userId: req.session!.userId,
+				userId,
 				user,
+				fromUser,
 			},
 		});
 		return messages;
 	}
-
-	@Mutation(() => Message)
-	async sendMessageToUser() {}
 }
