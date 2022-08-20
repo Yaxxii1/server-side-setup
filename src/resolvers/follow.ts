@@ -11,7 +11,7 @@ import {
 	UseMiddleware,
 } from "type-graphql";
 import { User } from "../Models/User";
-import { isAuth } from "../util/isAuth";
+import { isAuth } from "../utils/isAuth";
 import { Context } from "../types";
 
 @ObjectType()
@@ -59,11 +59,12 @@ export class FollowResolver {
 		@Arg("id", () => Int) id: number,
 		@Ctx() { req }: Context
 	): Promise<Follow | undefined> {
+		const currentUser = await User.findOne(req.session.userId);
 		const followedUser = await User.findOne(id);
 
 		const followsTo = await Follow.createQueryBuilder("follow")
 			.leftJoinAndSelect("follow.followsTo", "user")
-			.where("follow.follower = :id", { id: req.session.userId })
+			.where("follow.follower = :id", { id: currentUser?.id })
 			.getMany();
 
 		if (
@@ -72,7 +73,7 @@ export class FollowResolver {
 			!followsTo.some((follow) => follow.followsTo.id === id)
 		) {
 			const follow = Follow.create({
-				follower: req.session.userId as any,
+				follower: currentUser,
 				followsTo: followedUser,
 			});
 			return await Follow.save(follow);

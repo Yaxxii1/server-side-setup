@@ -17,9 +17,9 @@ import {
 import { DeleteResult, getConnection } from "typeorm";
 import { User } from "../Models/User";
 import { Context } from "../types";
-import { isAuth } from "../util/isAuth";
-import { validateRegister } from "../util/validateRegister";
-import { sendEmail } from "../util/sendEmail";
+import { isAuth } from "../utils/isAuth";
+import { validateRegister } from "../utils/validateRegister";
+import { sendEmail } from "../utils/sendEmail";
 import { v4 } from "uuid";
 import { Follow } from "../Models/Follow";
 
@@ -319,7 +319,10 @@ export class UserResolver {
 	}
 
 	@Mutation(() => Boolean)
-	async forgotPassword(@Arg("email") email: string, @Ctx() { redis }: Context) {
+	async forgotPassword(
+		@Arg("email") email: string,
+		@Ctx() { redis, req }: Context
+	) {
 		const user = await User.findOne({ where: { email } });
 
 		if (!user) {

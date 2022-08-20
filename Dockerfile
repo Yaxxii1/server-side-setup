@@ -8,7 +8,7 @@ WORKDIR /usr/src/app
 # where available (npm@5+)
 COPY package.json ./
 COPY yarn.lock ./
-# I HAVE NO IDEA HOW TO DO ANY OF THIS LMAO SORRY MY BAD BUT MAYBE SOMEONE ELSE CAN HELP ME
+
 RUN yarn
 
 COPY . .

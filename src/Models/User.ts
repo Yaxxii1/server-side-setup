@@ -43,13 +43,12 @@ export class User extends BaseEntity {
 	@OneToMany(() => Follow, (follow) => follow.followsTo)
 	followers!: Follow[];
 
-	// a user can send messages to other users
 	@OneToMany(() => Message, (message) => message.user)
 	messages: Message[];
 
-	@Field(() => Boolean)
-	@Column({ default: false })
-	isActive: boolean;
+	// @Field(() => Boolean)
+	// @Column({ default: false })
+	// isActive: boolean;
 
 	@Field(() => String)
 	@CreateDateColumn()

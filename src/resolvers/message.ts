@@ -10,7 +10,7 @@ import {
 	UseMiddleware,
 } from "type-graphql";
 import { Context } from "../types";
-import { isAuth } from "../util/isAuth";
+import { isAuth } from "../utils/isAuth";
 
 @Resolver(Message)
 export class MessageResolver {

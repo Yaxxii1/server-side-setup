@@ -1,4 +1,4 @@
-import { isAuth } from "../util/isAuth";
+import { isAuth } from "../utils/isAuth";
 import {
 	Arg,
 	Ctx,

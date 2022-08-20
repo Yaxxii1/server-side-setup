@@ -23,14 +23,14 @@ import { MessageResolver } from "./resolvers/message";
 import { PostResolver } from "./resolvers/post";
 import { UserResolver } from "./resolvers/user";
 import { Context } from "./types";
-import { createLikeLoader } from "./util/createLikeLoader";
-import { createUserLoader } from "./util/createUserLoader";
+import { createLikeLoader } from "./utils/createLikeLoader";
+import { createUserLoader } from "./utils/createUserLoader";
 
 const main = async () => {
 	const connection = await createConnection({
 		type: "postgres",
 		database: "serverSetup",
-		password: "wsmb492?",
+		password: "postgres",
 		username: "postgres",
 		logging: true,
 		synchronize: true,

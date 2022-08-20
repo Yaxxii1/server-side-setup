@@ -1,8 +1,8 @@
 import { Request, Response } from "express";
 import { Session } from "express-session";
 import { Redis } from "ioredis";
-import { createLikeLoader } from "./util/createLikeLoader";
-import { createUserLoader } from "./util/createUserLoader";
+import { createLikeLoader } from "./utils/createLikeLoader";
+import { createUserLoader } from "./utils/createUserLoader";
 
 declare module "express-session" {
 	export interface Session {
